@@ -338,3 +338,10 @@ echo "=== XLLL Polkit setup ==="
 if [ -x "$DOT/polkit-setup.sh" ]; then
     "$DOT/polkit-setup.sh" || true
 fi
+
+# XLLL_RUN_SUPER_LAUNCHER_FIX
+echo
+echo "=== XLLL Super launcher fix ==="
+if [ -x "$DOT/super-launcher-fix.sh" ]; then
+    "$DOT/super-launcher-fix.sh" || true
+fi
