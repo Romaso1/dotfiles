@@ -1,4 +1,4 @@
-# Never commit secrets
+# Never commit private keys / tokens
 .ssh/
 *.key
 *.pem
@@ -10,13 +10,12 @@
 *.asc
 .env
 .env.*
-secrets.*
 tokens.*
 credentials.*
 id_rsa
 id_ed25519
 
-# Caches / logs / backups
+# Runtime junk
 .cache/
 Cache/
 cache/
@@ -26,10 +25,14 @@ log/
 *.bak
 *.backup*
 *backup*
-xlll-backups/
-xlll-working-caelestia-backup/
-
-# Runtime junk
 *.swp
 *.tmp
 .DS_Store
+
+# Heavy generated folders
+node_modules/
+.venv/
+venv/
+build/
+dist/
+__pycache__/

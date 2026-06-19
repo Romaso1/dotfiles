@@ -2,17 +2,23 @@
 set -Eeuo pipefail
 
 DOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$DOT"
 
-copy_config() {
-    local name="$1"
-    local src="$HOME/.config/$name"
-    local dst="$DOT/.config/$name"
+GITHUB_USER="$(gh api user --jq .login)"
+REMOTE_URL="https://github.com/$GITHUB_USER/dotfiles.git"
+
+echo "Sync current configs into repo..."
+
+sync_dir() {
+    local src="$1"
+    local dst="$2"
 
     if [ -d "$src" ]; then
-        echo "Sync: ~/.config/$name"
+        echo "Sync: $src -> $dst"
         mkdir -p "$dst"
         rsync -a --delete \
             --exclude '.git' \
+            --exclude '.cache' \
             --exclude 'cache' \
             --exclude 'Cache' \
             --exclude 'logs' \
@@ -21,24 +27,49 @@ copy_config() {
             --exclude '*.bak' \
             --exclude '*.backup*' \
             --exclude '*backup*' \
-            --exclude 'xlll-backups' \
-            --exclude 'xlll-working-caelestia-backup' \
+            --exclude 'node_modules' \
+            --exclude '.venv' \
+            --exclude 'venv' \
+            --exclude 'build' \
+            --exclude 'dist' \
+            --exclude '__pycache__' \
             "$src/" "$dst/"
     fi
 }
 
-copy_config hypr
-copy_config caelestia
-copy_config foot
-copy_config fish
-copy_config fastfetch
-copy_config btop
-copy_config uwsm
+mkdir -p "$DOT/.config" "$DOT/.local/share"
 
-cd "$DOT"
+sync_dir "$HOME/.config/hypr" "$DOT/.config/hypr"
+sync_dir "$HOME/.config/caelestia" "$DOT/.config/caelestia"
+sync_dir "$HOME/.config/foot" "$DOT/.config/foot"
+sync_dir "$HOME/.config/fish" "$DOT/.config/fish"
+sync_dir "$HOME/.config/fastfetch" "$DOT/.config/fastfetch"
+sync_dir "$HOME/.config/btop" "$DOT/.config/btop"
+sync_dir "$HOME/.config/uwsm" "$DOT/.config/uwsm"
 
-./check-secrets.sh
+# Optional: keep Caelestia source bundled too if it exists
+if [ -d "$HOME/.local/share/caelestia" ]; then
+    sync_dir "$HOME/.local/share/caelestia" "$DOT/.local/share/caelestia"
+fi
 
+if [ -x "$DOT/check-secrets.sh" ]; then
+    "$DOT/check-secrets.sh"
+fi
+
+BIG_FILES="$(find "$DOT" -type f -size +95M -not -path '*/.git/*' || true)"
+if [ -n "$BIG_FILES" ]; then
+    echo "❌ Files over 95MB. GitHub will reject them:"
+    echo "$BIG_FILES"
+    exit 1
+fi
+
+gh auth setup-git >/dev/null 2>&1 || true
+gh config set -h github.com git_protocol https >/dev/null 2>&1 || true
+
+git remote remove origin 2>/dev/null || true
+git remote add origin "$REMOTE_URL"
+
+git branch -M main
 git add .
 git commit -m "update dotfiles $(date +%Y-%m-%d_%H-%M-%S)" || true
-git push
+git push -u origin main
