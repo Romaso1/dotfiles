@@ -331,3 +331,10 @@ echo "Now press SUPER once."
 echo
 echo "If something breaks, backup is here:"
 echo "$BACKUP"
+
+# XLLL_RUN_POLKIT_SETUP
+echo
+echo "=== XLLL Polkit setup ==="
+if [ -x "$DOT/polkit-setup.sh" ]; then
+    "$DOT/polkit-setup.sh" || true
+fi
