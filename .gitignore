@@ -1,0 +1,35 @@
+# Never commit secrets
+.ssh/
+*.key
+*.pem
+*.p12
+*.pfx
+*.kdbx
+*.age
+*.gpg
+*.asc
+.env
+.env.*
+secrets.*
+tokens.*
+credentials.*
+id_rsa
+id_ed25519
+
+# Caches / logs / backups
+.cache/
+Cache/
+cache/
+logs/
+log/
+*.log
+*.bak
+*.backup*
+*backup*
+xlll-backups/
+xlll-working-caelestia-backup/
+
+# Runtime junk
+*.swp
+*.tmp
+.DS_Store
