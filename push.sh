@@ -37,7 +37,11 @@ sync_dir() {
     fi
 }
 
-mkdir -p "$DOT/.config" "$DOT/.local/share"
+mkdir -p "$DOT/.config" "$DOT/.local/share" "$DOT/.local/bin"
+
+if [ -f "$HOME/.local/bin/xlll-start-caelestia-shell" ]; then
+    cp -a "$HOME/.local/bin/xlll-start-caelestia-shell" "$DOT/.local/bin/xlll-start-caelestia-shell"
+fi
 
 sync_dir "$HOME/.config/hypr" "$DOT/.config/hypr"
 sync_dir "$HOME/.config/caelestia" "$DOT/.config/caelestia"

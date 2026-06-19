@@ -299,7 +299,7 @@ pkill -u "$USER" -f "qs.*caelestia|quickshell.*caelestia" >/dev/null 2>&1 || tru
 sleep 1
 
 if command -v caelestia >/dev/null 2>&1; then
-    nohup caelestia shell -d >/tmp/xlll-caelestia-shell.log 2>&1 &
+    "$HOME/.local/bin/xlll-start-caelestia-shell" || true
 else
     echo "WARNING: caelestia command not found after install"
 fi
@@ -345,3 +345,70 @@ echo "=== XLLL Super launcher fix ==="
 if [ -x "$DOT/super-launcher-fix.sh" ]; then
     "$DOT/super-launcher-fix.sh" || true
 fi
+
+
+# XLLL_INSTALL_SINGLE_CAEL_STARTER
+echo
+echo "=== XLLL single-instance Caelestia starter ==="
+mkdir -p "$HOME/.local/bin"
+
+if [ -f "$DOT/.local/bin/xlll-start-caelestia-shell" ]; then
+    cp -a "$DOT/.local/bin/xlll-start-caelestia-shell" "$HOME/.local/bin/xlll-start-caelestia-shell"
+else
+    cat > "$HOME/.local/bin/xlll-start-caelestia-shell" <<'SH'
+#!/usr/bin/env bash
+set -u
+LOG="/tmp/xlll-caelestia-shell.log"
+
+if pgrep -u "$USER" -f "qs.*caelestia|quickshell.*caelestia|caelestia shell" >/dev/null 2>&1; then
+    exit 0
+fi
+
+if ! command -v caelestia >/dev/null 2>&1; then
+    echo "caelestia command not found" > "$LOG"
+    exit 1
+fi
+
+nohup caelestia shell -d > "$LOG" 2>&1 &
+disown 2>/dev/null || true
+SH
+fi
+
+chmod +x "$HOME/.local/bin/xlll-start-caelestia-shell"
+
+EXECS="$HOME/.config/hypr/hyprland/execs.conf"
+mkdir -p "$(dirname "$EXECS")"
+touch "$EXECS"
+
+python - "$EXECS" "$HOME" <<'PY2'
+from pathlib import Path
+import sys
+import re
+
+p = Path(sys.argv[1])
+home = sys.argv[2]
+text = p.read_text(errors="ignore")
+
+lines = []
+for line in text.splitlines():
+    low = line.lower()
+    if "caelestia shell" in low:
+        continue
+    if "xlll-start-caelestia-shell" in low:
+        continue
+    if re.search(r"qs\s+-c\s+caelestia", low):
+        continue
+    if re.search(r"quickshell.*caelestia", low):
+        continue
+    lines.append(line)
+
+block = f"""
+# XLLL single-instance Caelestia shell autostart
+exec-once = {home}/.local/bin/xlll-start-caelestia-shell
+"""
+
+p.write_text("\n".join(lines).rstrip() + "\n" + block + "\n")
+PY2
+
+"$HOME/.local/bin/xlll-start-caelestia-shell" || true
+
