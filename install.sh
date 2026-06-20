@@ -406,22 +406,48 @@ PY2
 "$HOME/.local/bin/xlll-start-caelestia-shell" || true
 
 
-# XLLL_CLEAN_MOUSE_LAUNCHER_FIX
+# XLLL_HYPR055_MOUSE_BUG_WORKAROUND
 echo
-echo "=== XLLL clean mouse/launcher fix ==="
+echo "=== XLLL Hyprland 0.55 mouse bind workaround ==="
 
-cat >> "$HOME/.config/caelestia/hypr-user.conf" <<'CONF'
+for f in "$HOME/.config/hypr/variables.conf" "$HOME/.config/caelestia/hypr-vars.conf"; do
+    mkdir -p "$(dirname "$f")"
+    touch "$f"
 
-# XLLL CLEAN FINAL MOUSE/LАUNCHER FIX
-unbind = SUPER, mouse:272
-unbind = SUPER, mouse:273
-unbind = SUPER, Super_L
-unbind = SUPER, SPACE
+    python - "$f" <<'PY2'
+from pathlib import Path
+import re
+import sys
 
-bindm = SUPER, mouse:272, movewindow
-bindm = SUPER, mouse:273, resizewindow
-bind = SUPER, SPACE, exec, caelestia shell drawers toggle launcher
-CONF
+p = Path(sys.argv[1])
+text = p.read_text(errors="ignore")
+
+text = re.sub(r'(?m)^\s*\$kbMoveWindow\s*=.*$', '', text)
+text = re.sub(r'(?m)^\s*\$kbResizeWindow\s*=.*$', '', text)
+
+text = text.rstrip() + """
+
+# XLLL Hyprland 0.55 legacy mouse-binds workaround
+$kbMoveWindow = Super, Z
+$kbResizeWindow = Super, X
+"""
+
+p.write_text(text + "\n")
+PY2
+done
+
+KEYBINDS="$HOME/.config/hypr/hyprland/keybinds.conf"
+mkdir -p "$(dirname "$KEYBINDS")"
+touch "$KEYBINDS"
+
+grep -q 'bindm = $kbMoveWindow, movewindow' "$KEYBINDS" || \
+    echo 'bindm = $kbMoveWindow, movewindow' >> "$KEYBINDS"
+
+grep -q 'bindm = $kbResizeWindow, resizewindow' "$KEYBINDS" || \
+    echo 'bindm = $kbResizeWindow, resizewindow' >> "$KEYBINDS"
+
+grep -q 'caelestia shell drawers toggle launcher' "$KEYBINDS" || \
+    echo 'bind = SUPER, SPACE, exec, caelestia shell drawers toggle launcher' >> "$KEYBINDS"
 
 rm -f "$HOME/.local/bin/xlll-caelestia-super-used"
 rm -f "$HOME/.local/bin/xlll-caelestia-super-press"
@@ -430,3 +456,4 @@ rm -f "$HOME/.local/bin/xlll-caelestia-launcher"
 rm -f "$HOME/.local/bin/xlll-caelestia-interrupt"
 
 hyprctl reload 2>/dev/null || true
+
