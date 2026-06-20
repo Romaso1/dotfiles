@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -u
+
+sleep 1
+
+# Чистим legacy-варианты, чтобы они не конфликтовали.
+hyprctl keyword unbind "SUPER, mouse:272" 2>/dev/null || true
+hyprctl keyword unbind "SUPER, mouse:273" 2>/dev/null || true
+hyprctl keyword unbind "SUPER, Z" 2>/dev/null || true
+hyprctl keyword unbind "SUPER, X" 2>/dev/null || true
+hyprctl keyword unbind "SUPER, Super_L" 2>/dev/null || true
+
+# Lua binds для Hyprland 0.55:
+# SUPER+ЛКМ/ПКМ работают через mouse=true.
+hyprctl eval '
+hl.unbind("SUPER + mouse:272")
+hl.unbind("SUPER + mouse:273")
+hl.unbind("SUPER + SUPER_L")
+
+hl.bind("SUPER + mouse:272", function()
+    os.execute("/home/'"$USER"'/.local/bin/xlll-caelestia-super-used >/dev/null 2>&1 &")
+    hl.dispatch(hl.dsp.window.drag())
+end, { mouse = true })
+
+hl.bind("SUPER + mouse:273", function()
+    os.execute("/home/'"$USER"'/.local/bin/xlll-caelestia-super-used >/dev/null 2>&1 &")
+    hl.dispatch(hl.dsp.window.resize())
+end, { mouse = true })
+
+hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd("/home/'"$USER"'/.local/bin/xlll-caelestia-super-launcher"), { release = true })
+' >/tmp/xlll-lua-super-binds.log 2>&1 || {
+    echo "Lua/eval failed. Log:"
+    cat /tmp/xlll-lua-super-binds.log
+    exit 1
+}

@@ -457,3 +457,26 @@ rm -f "$HOME/.local/bin/xlll-caelestia-interrupt"
 
 hyprctl reload 2>/dev/null || true
 
+
+# XLLL_LUA_SUPER_MOUSE_BINDS
+echo
+echo "=== XLLL Lua/eval SUPER mouse binds ==="
+
+mkdir -p "$HOME/.local/bin"
+
+for s in xlll-caelestia-super-used xlll-caelestia-super-launcher xlll-apply-lua-super-binds; do
+    if [ -f "$DOT/.local/bin/$s" ]; then
+        cp -a "$DOT/.local/bin/$s" "$HOME/.local/bin/$s"
+        chmod +x "$HOME/.local/bin/$s"
+    fi
+done
+
+EXECS="$HOME/.config/hypr/hyprland/execs.conf"
+mkdir -p "$(dirname "$EXECS")"
+touch "$EXECS"
+
+grep -q "xlll-apply-lua-super-binds" "$EXECS" || \
+    echo "exec-once = $HOME/.local/bin/xlll-apply-lua-super-binds" >> "$EXECS"
+
+hyprctl reload 2>/dev/null || true
+"$HOME/.local/bin/xlll-apply-lua-super-binds" 2>/dev/null || true

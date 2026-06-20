@@ -11,7 +11,7 @@ PY
 echo "$NOW" > "$STATE"
 
 (
-    sleep 1.0
+    sleep 0.8
     if [ -f "$STATE" ]; then
         OLD="$(cat "$STATE" 2>/dev/null || true)"
         if [ "$OLD" = "$NOW" ]; then
