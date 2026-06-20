@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -u
+
+STATE="/tmp/xlll-caelestia-super-used-${UID}"
+LOG="/tmp/xlll-caelestia-launcher.log"
+
+now_ms() {
+    date +%s%3N 2>/dev/null || python - <<'PY'
+import time
+print(int(time.time() * 1000))
+PY
+}
+
+if [ -f "$STATE" ]; then
+    NOW="$(now_ms)"
+    OLD="$(cat "$STATE" 2>/dev/null || echo 0)"
+    AGE="$((NOW - OLD))"
+
+    if [ "$AGE" -ge 0 ] && [ "$AGE" -lt 1000 ]; then
+        rm -f "$STATE"
+        exit 0
+    fi
+
+    rm -f "$STATE"
+fi
+
+if ! command -v caelestia >/dev/null 2>&1; then
+    notify-send "Caelestia" "Команда caelestia не найдена" 2>/dev/null || true
+    exit 1
+fi
+
+if ! pgrep -u "$USER" -f "qs.*caelestia|quickshell.*caelestia|caelestia shell" >/dev/null 2>&1; then
+    if command -v xlll-start-caelestia-shell >/dev/null 2>&1; then
+        xlll-start-caelestia-shell || true
+    else
+        nohup caelestia shell -d >/tmp/xlll-caelestia-shell.log 2>&1 &
+    fi
+    sleep 0.8
+fi
+
+caelestia shell drawers toggle launcher >"$LOG" 2>&1 || {
+    if command -v xlll-start-caelestia-shell >/dev/null 2>&1; then
+        xlll-start-caelestia-shell || true
+    else
+        nohup caelestia shell -d >>/tmp/xlll-caelestia-shell.log 2>&1 &
+    fi
+    sleep 1
+    caelestia shell drawers toggle launcher >>"$LOG" 2>&1
+}
