@@ -3,7 +3,6 @@ set -u
 
 LOG="/tmp/xlll-caelestia-shell.log"
 
-# Если Caelestia shell уже живой — не запускаем второй раз
 if pgrep -u "$USER" -f "qs.*caelestia|quickshell.*caelestia|caelestia shell" >/dev/null 2>&1; then
     exit 0
 fi
