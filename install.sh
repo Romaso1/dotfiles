@@ -339,13 +339,6 @@ if [ -x "$DOT/polkit-setup.sh" ]; then
     "$DOT/polkit-setup.sh" || true
 fi
 
-# XLLL_RUN_SUPER_LAUNCHER_FIX
-echo
-echo "=== XLLL Super launcher fix ==="
-if [ -x "$DOT/super-launcher-fix.sh" ]; then
-    "$DOT/super-launcher-fix.sh" || true
-fi
-
 
 # XLLL_INSTALL_SINGLE_CAEL_STARTER
 echo
@@ -412,3 +405,28 @@ PY2
 
 "$HOME/.local/bin/xlll-start-caelestia-shell" || true
 
+
+# XLLL_CLEAN_MOUSE_LAUNCHER_FIX
+echo
+echo "=== XLLL clean mouse/launcher fix ==="
+
+cat >> "$HOME/.config/caelestia/hypr-user.conf" <<'CONF'
+
+# XLLL CLEAN FINAL MOUSE/LАUNCHER FIX
+unbind = SUPER, mouse:272
+unbind = SUPER, mouse:273
+unbind = SUPER, Super_L
+unbind = SUPER, SPACE
+
+bindm = SUPER, mouse:272, movewindow
+bindm = SUPER, mouse:273, resizewindow
+bind = SUPER, SPACE, exec, caelestia shell drawers toggle launcher
+CONF
+
+rm -f "$HOME/.local/bin/xlll-caelestia-super-used"
+rm -f "$HOME/.local/bin/xlll-caelestia-super-press"
+rm -f "$HOME/.local/bin/xlll-caelestia-super-launcher"
+rm -f "$HOME/.local/bin/xlll-caelestia-launcher"
+rm -f "$HOME/.local/bin/xlll-caelestia-interrupt"
+
+hyprctl reload 2>/dev/null || true
