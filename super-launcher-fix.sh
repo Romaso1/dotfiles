@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 echo "======================================"
-echo " XLLL SUPER LAUNCHER FIX V3 MOUSE OK"
+echo " XLLL SUPER LAUNCHER FIX V4"
 echo "======================================"
 
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -14,7 +14,7 @@ mkdir -p "$HOME_BIN"
 mkdir -p "$(dirname "$KEYBINDS")"
 
 echo
-echo "=== 1. Create helper scripts ==="
+echo "=== 1. Helper scripts ==="
 
 cat > "$HOME_BIN/xlll-caelestia-super-used" <<'EOS'
 #!/usr/bin/env bash
@@ -54,6 +54,7 @@ print(int(time.time() * 1000))
 PY
 }
 
+# Если перед отпусканием SUPER был bind/drag — launcher не открываем.
 if [ -f "$STATE" ]; then
     NOW="$(now_ms)"
     OLD="$(cat "$STATE" 2>/dev/null || echo 0)"
@@ -99,13 +100,13 @@ echo
 echo "=== 2. Backup keybinds ==="
 
 if [ -f "$KEYBINDS" ]; then
-    cp -a "$KEYBINDS" "$KEYBINDS.backup-super-mouse-fix-$TS"
+    cp -a "$KEYBINDS" "$KEYBINDS.backup-super-mouse-v4-$TS"
 else
     touch "$KEYBINDS"
 fi
 
 echo
-echo "=== 3. Patch keybinds: mouse move/resize restored ==="
+echo "=== 3. Patch keybinds ==="
 
 python - "$KEYBINDS" "$HOME" <<'PY'
 from pathlib import Path
@@ -121,7 +122,7 @@ clean = []
 for line in text.splitlines():
     low = line.lower()
 
-    # Удаляем старые конфликтующие xlll mouse/key launcher строки
+    # Удалить старые XLLL launcher/mouse/interruption строки
     if "xlll-caelestia-super" in low:
         continue
     if "xlll-caelestia-launcher" in low:
@@ -131,53 +132,54 @@ for line in text.splitlines():
     if "caelestia:launcherinterrupt" in low:
         continue
 
-    # Удаляем старый global bare-super launcher
-    if re.match(r"\s*bindi?\s*=\s*Super\s*,\s*Super_L\s*,\s*global\s*,\s*caelestia:launcher\s*$", line, re.I):
+    # Удалить старый global launcher на bare Super
+    if re.match(r"\s*bindi?\s*=\s*super\s*,\s*super_l\s*,\s*global\s*,\s*caelestia:launcher\s*$", line, re.I):
         continue
-    if re.match(r"\s*bindr\s*=\s*Super\s*,\s*Super_L\s*,", line, re.I):
-        continue
-
-    # Удаляем любые старые mouse:272/273 конфликты только в Launcher-блоке/XLLL-контексте
-    if re.search(r"bindin\s*=\s*Super\s*,\s*mouse:(272|273)", line, re.I):
+    if re.match(r"\s*bindr\s*=\s*super\s*,\s*super_l\s*,", line, re.I):
         continue
 
-    # Удаляем старые bindm mouse чтобы вставить нормальные один раз
-    if re.match(r"\s*bindm\s*=\s*(\$mainMod|\$mainmod|\$mod|Super|SUPER)\s*,\s*mouse:272\s*,\s*movewindow", line, re.I):
-        continue
-    if re.match(r"\s*bindm\s*=\s*(\$mainMod|\$mainmod|\$mod|Super|SUPER)\s*,\s*mouse:273\s*,\s*resizewindow", line, re.I):
+    # Удалить любые конфликтующие SUPER+mouse:272/273, потом добавим правильные
+    if re.search(r"^\s*bind[a-z]*\s*=\s*(\$mainmod|\$mod|super|super)\s*,\s*mouse:(272|273)\s*,", line, re.I):
         continue
 
     clean.append(line)
 
 text = "\n".join(clean).rstrip() + "\n"
 
-# Клавиши, которые НЕ должны открывать launcher после SUPER+bind
+# Interrupt на клавиатурные комбо — только на отпускание клавиши.
 keys = []
 keys += list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 keys += [str(i) for i in range(10)]
 keys += [
     "SPACE", "TAB", "RETURN", "ESCAPE", "BACKSPACE", "DELETE",
     "LEFT", "RIGHT", "UP", "DOWN",
+    "F1", "F2", "F3", "F4", "F5", "F6",
+    "F7", "F8", "F9", "F10", "F11", "F12",
 ]
 
-key_interrupts = "\n".join(
-    f"bindin = Super, {k}, exec, {home}/.local/bin/xlll-caelestia-super-used"
+keyboard_interrupts = "\n".join(
+    f"bindr = SUPER, {k}, exec, {home}/.local/bin/xlll-caelestia-super-used"
     for k in keys
 )
 
 launcher_block = f"""# Launcher
-# XLLL FIX V3:
+# XLLL FIX V4:
 # Bare SUPER opens launcher.
-# SUPER + keyboard bind sets short interrupt flag.
-# SUPER + LMB/RMB uses real Hyprland bindm for move/resize.
-bindr = Super, Super_L, exec, {home}/.local/bin/xlll-caelestia-super-launcher
+# SUPER + keyboard bind marks interrupt on key release.
+# SUPER + LMB/RMB uses bindm for real Hyprland move/resize.
+# Mouse interrupt is on mouse-button release only, not on press, so drag works.
+bindr = SUPER, Super_L, exec, {home}/.local/bin/xlll-caelestia-super-launcher
 
-# XLLL SUPER keyboard combo interrupts
-{key_interrupts}
+# XLLL keyboard combo interrupt
+{keyboard_interrupts}
 
-# XLLL mouse move/resize, do NOT replace with bindin
-bindm = Super, mouse:272, movewindow
-bindm = Super, mouse:273, resizewindow
+# XLLL mouse combo interrupt on release only
+bindr = SUPER, mouse:272, exec, {home}/.local/bin/xlll-caelestia-super-used
+bindr = SUPER, mouse:273, exec, {home}/.local/bin/xlll-caelestia-super-used
+
+# XLLL real Hyprland mouse move/resize
+bindm = SUPER, mouse:272, movewindow
+bindm = SUPER, mouse:273, resizewindow
 """
 
 if "# Launcher" in text and "# Misc" in text:
@@ -209,14 +211,14 @@ echo "=== 5. Reload Hyprland ==="
 hyprctl reload 2>/dev/null || true
 
 echo
-echo "=== 6. Check mouse binds ==="
-hyprctl binds 2>/dev/null | grep -Ei "mouse:272|mouse:273|movewindow|resizewindow|Super_L|xlll-caelestia-super" || true
+echo "=== 6. Check binds ==="
+hyprctl binds 2>/dev/null | grep -Ei "Super_L|mouse:272|mouse:273|movewindow|resizewindow|xlll-caelestia-super" || true
 
 echo
 echo "======================================"
 echo " DONE"
 echo "======================================"
-echo "Test now:"
-echo "SUPER + ЛКМ drag = move window"
-echo "SUPER + ПКМ drag = resize window"
+echo "Test:"
+echo "SUPER + ЛКМ drag = move"
+echo "SUPER + ПКМ drag = resize"
 echo "SUPER once = launcher"

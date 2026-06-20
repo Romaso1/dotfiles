@@ -11,6 +11,7 @@ print(int(time.time() * 1000))
 PY
 }
 
+# Если перед отпусканием SUPER был bind/drag — launcher не открываем.
 if [ -f "$STATE" ]; then
     NOW="$(now_ms)"
     OLD="$(cat "$STATE" 2>/dev/null || echo 0)"
