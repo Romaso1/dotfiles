@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -u
+
+PRESS="/tmp/xlll-caelestia-super-press-${UID}"
+
+NOW="$(date +%s%3N 2>/dev/null || python - <<'PY'
+import time
+print(int(time.time() * 1000))
+PY
+)"
+
+POS="$(hyprctl cursorpos 2>/dev/null | tr -d ',' || echo '0 0')"
+X="$(echo "$POS" | awk '{print $1}')"
+Y="$(echo "$POS" | awk '{print $2}')"
+
+case "$X" in ''|*[!0-9-]*) X=0 ;; esac
+case "$Y" in ''|*[!0-9-]*) Y=0 ;; esac
+
+echo "$NOW $X $Y" > "$PRESS"

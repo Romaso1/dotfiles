@@ -2,6 +2,7 @@
 set -u
 
 STATE="/tmp/xlll-caelestia-super-used-${UID}"
+PRESS="/tmp/xlll-caelestia-super-press-${UID}"
 LOG="/tmp/xlll-caelestia-launcher.log"
 
 now_ms() {
@@ -11,18 +12,46 @@ print(int(time.time() * 1000))
 PY
 }
 
-# Если перед отпусканием SUPER был bind/drag — launcher не открываем.
+NOW="$(now_ms)"
+
+# 1. Если был SUPER+keyboard bind — launcher не открываем.
 if [ -f "$STATE" ]; then
-    NOW="$(now_ms)"
     OLD="$(cat "$STATE" 2>/dev/null || echo 0)"
     AGE="$((NOW - OLD))"
 
     if [ "$AGE" -ge 0 ] && [ "$AGE" -lt 1000 ]; then
         rm -f "$STATE"
+        rm -f "$PRESS"
         exit 0
     fi
 
     rm -f "$STATE"
+fi
+
+# 2. Если при зажатом SUPER мышь заметно двигалась — это move/resize, launcher не открываем.
+if [ -f "$PRESS" ]; then
+    read -r T0 X0 Y0 < "$PRESS" || true
+    rm -f "$PRESS"
+
+    POS="$(hyprctl cursorpos 2>/dev/null | tr -d ',' || echo '0 0')"
+    X1="$(echo "$POS" | awk '{print $1}')"
+    Y1="$(echo "$POS" | awk '{print $2}')"
+
+    case "${T0:-0}" in ''|*[!0-9-]*) T0=0 ;; esac
+    case "${X0:-0}" in ''|*[!0-9-]*) X0=0 ;; esac
+    case "${Y0:-0}" in ''|*[!0-9-]*) Y0=0 ;; esac
+    case "${X1:-0}" in ''|*[!0-9-]*) X1=0 ;; esac
+    case "${Y1:-0}" in ''|*[!0-9-]*) Y1=0 ;; esac
+
+    AGE="$((NOW - T0))"
+    DX="$((X1 - X0))"
+    DY="$((Y1 - Y0))"
+    [ "$DX" -lt 0 ] && DX="$((-DX))"
+    [ "$DY" -lt 0 ] && DY="$((-DY))"
+
+    if [ "$AGE" -ge 0 ] && [ "$AGE" -lt 6000 ] && { [ "$DX" -gt 8 ] || [ "$DY" -gt 8 ]; }; then
+        exit 0
+    fi
 fi
 
 if ! command -v caelestia >/dev/null 2>&1; then
